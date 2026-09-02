@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FITAVAL — List Your Gym</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --black:#0E0F11; --ink:#1A1C1F; --white:#FFFFFF; --paper:#FAFAF9; --light-gray:#F0F1EF;
+    --line:#E6E7E5; --line-strong:#D6D8D5; --gray:#6B7075; --gray-light:#9CA0A4;
+    --green:#0E7C4A; --green-dark:#0A5E38; --green-tint:#EAF6EF; --danger:#C0392B;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper); color:var(--black); font-family:'Inter',sans-serif; min-height:100vh;}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:26px 40px; border-bottom:1px solid var(--line); background:var(--white);}
+  .wordmark{font-weight:800; font-size:17px;}
+  .wordmark span{color:var(--green);}
+  .topbar-note{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--gray);}
+
+  .stage{min-height:calc(100vh - 76px); display:flex; align-items:center; justify-content:center; padding:60px 24px;}
+  .wrap{max-width:900px; margin:0 auto; padding:48px 24px 100px;}
+
+  /* progress ledger */
+  .progress-head{margin-bottom:34px;}
+  .progress-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
+  .progress-label{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.05em; color:var(--gray);}
+  .progress-label b{color:var(--black); font-weight:700;}
+  .progress-phase{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:var(--green-dark); background:var(--green-tint); padding:5px 11px; border-radius:99px; border:1px solid rgba(14,124,74,0.18);}
+  .ledger-track{display:flex; gap:5px;}
+  .tick{flex:1; height:4px; border-radius:3px; background:var(--line);}
+  .tick.filled{background:var(--green);}
+
+  h1{font-size:28px; font-weight:800; letter-spacing:-0.01em; margin:28px 0 8px;}
+  .lede{font-size:15px; line-height:1.6; color:var(--gray); margin:0 0 34px; max-width:56ch;}
+
+  /* landing screen */
+  .landing{width:100%; max-width:560px; text-align:center;}
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-family:'JetBrains Mono',monospace; font-size:11px;
+    letter-spacing:0.1em; text-transform:uppercase; color:var(--green-dark); background:var(--green-tint);
+    border:1px solid rgba(14,124,74,0.18); padding:7px 14px; border-radius:99px; margin-bottom:26px;
+  }
+  .eyebrow::before{content:''; width:6px; height:6px; border-radius:50%; background:var(--green);}
+  .landing h1{font-size:38px; line-height:1.15; margin:0 0 16px;}
+  .landing .lede{font-size:16px; max-width:44ch; margin:0 auto 40px;}
+  .ledger.center{margin:0 auto 8px; max-width:340px;}
+  .ledger-label{font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.04em; color:var(--gray); margin-bottom:36px;}
+  .ledger-label b{color:var(--black); font-weight:600;}
+  .cta{
+    appearance:none; border:none; background:var(--green); color:var(--white); font-family:'Inter',sans-serif;
+    font-weight:700; font-size:15.5px; padding:16px 34px; border-radius:10px; cursor:pointer; letter-spacing:0.01em;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .cta:hover{background:var(--green-dark);} .cta:active{transform:translateY(1px);}
+  .cta-sub{margin-top:14px; font-size:13px; color:var(--gray);}
+  .reassure{margin-top:48px; padding-top:28px; border-top:1px solid var(--line); display:flex; justify-content:center; gap:28px; flex-wrap:wrap;}
+  .reassure-item{font-size:12.5px; color:var(--gray); display:flex; align-items:center; gap:7px;}
+  .reassure-item .dot{width:5px; height:5px; border-radius:50%; background:var(--black); flex:none;}
+
+  /* generic section blocks */
+  section.block{background:var(--white); border:1px solid var(--line-strong); border-radius:14px; padding:24px 26px; margin-bottom:18px;}
+  .block-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; padding-bottom:14px; border-bottom:1px solid var(--line); flex-wrap:wrap; gap:10px;}
+  .block-head-left{display:flex; align-items:baseline; gap:10px;}
+  .block-eyebrow{font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--green-dark);}
+  .block-title{font-size:15px; font-weight:800;}
+  .block-subheading{font-size:19px; font-weight:800; margin:0 0 20px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px;}
+  @media (max-width:640px){.grid2,.grid4{grid-template-columns:1fr;}}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:7px;}
+  .field label .req{color:var(--green-dark);}
+  .field input, .field select, .field textarea{
+    width:100%; background:var(--white); border:1px solid var(--line-strong); color:var(--black);
+    border-radius:9px; padding:11px 13px; font-size:14px; font-family:'Inter',sans-serif; outline:none;
+    transition:border-color .15s ease;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--green);}
+  .field textarea{min-height:100px; resize:vertical;}
+  .invalid{border-color:var(--danger) !important;}
+
+  /* upload cards (logo/banner) */
+  .upload-row{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:6px;}
+  @media (max-width:560px){.upload-row{grid-template-columns:1fr;}}
+  .upload-card{border:1px solid var(--line-strong); border-radius:12px; background:var(--white); padding:16px;}
+  .upload-card-label{font-size:13px; font-weight:700; margin-bottom:4px;}
+  .upload-card-label .req{color:var(--green-dark);}
+  .upload-card-hint{font-size:11.5px; color:var(--gray-light); margin-bottom:12px;}
+  .dropzone{
+    border:1.5px dashed var(--line-strong); border-radius:10px; padding:24px 14px; text-align:center;
+    cursor:pointer; transition:all .15s ease; color:var(--gray); font-size:13px;
+  }
+  .dropzone:hover, .dropzone.drag{border-color:var(--green); color:var(--green-dark); background:var(--green-tint);}
+  .dropzone .browse{color:var(--green-dark); font-weight:700; text-decoration:underline;}
+  .logo-preview-wrap{display:flex; align-items:center; gap:14px;}
+  .logo-thumb{width:76px; height:76px; border-radius:10px; object-fit:cover; border:1px solid var(--line); flex:none;}
+  .banner-thumb{width:100%; height:110px; border-radius:10px; object-fit:cover; border:1px solid var(--line); margin-bottom:10px;}
+  .preview-actions{display:flex; gap:16px;}
+  .text-btn{background:none; border:none; font-size:12.5px; font-weight:700; cursor:pointer; padding:0;}
+  .text-btn.change{color:var(--green-dark);} .text-btn.remove{color:var(--danger);}
+
+  /* location / map */
+  .map-search-row{display:flex; gap:10px; margin-bottom:14px; position:relative;}
+  .map-search-row input{flex:1; background:var(--white); border:1px solid var(--line-strong); border-radius:9px; padding:12px 13px; font-size:14px; outline:none;}
+  .map-search-row input:focus{border-color:var(--green);}
+  .map-btn{background:var(--white); border:1px solid var(--line-strong); border-radius:9px; padding:11px 15px; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer; white-space:nowrap; transition:all .15s ease;}
+  .map-btn:hover{border-color:var(--green); color:var(--green-dark);}
+  .suggest-list{position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--white); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,0.08); z-index:1000; max-height:220px; overflow-y:auto; display:none;}
+  .suggest-list.show{display:block;}
+  .suggest-item{padding:10px 13px; font-size:13px; cursor:pointer; border-bottom:1px solid var(--line);}
+  .suggest-item:last-child{border-bottom:none;} .suggest-item:hover{background:var(--green-tint);}
+  #mapEl{width:100%; height:320px; border-radius:12px; border:1px solid var(--line-strong); margin-bottom:14px; background:var(--line);}
+  .map-actions{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .location-caption{font-size:12.5px; color:var(--gray);}
+  .location-caption b{color:var(--black);}
+  .confirm-btn{background:var(--green); color:var(--white); border:none; border-radius:9px; padding:11px 18px; font-size:13.5px; font-weight:700; cursor:pointer;}
+  .confirm-btn:hover{background:var(--green-dark);}
+  .confirmed-tag{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--green-dark); background:var(--green-tint); border:1px solid rgba(14,124,74,0.18); padding:5px 11px; border-radius:99px;}
+
+  /* hours */
+  .apply-row{display:flex; justify-content:flex-end; margin-bottom:14px;}
+  .day-card{display:grid; grid-template-columns:120px auto 1fr 1fr; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--line);}
+  .day-card:last-child{border-bottom:none;}
+  @media (max-width:640px){.day-card{grid-template-columns:1fr 1fr; row-gap:10px;} .day-card .day-name{grid-column:1/2;} .day-card .toggle-wrap{grid-column:2/3; justify-self:end;}}
+  .day-name{font-size:14px; font-weight:700;}
+  .toggle-wrap{display:flex; align-items:center; gap:8px;}
+  .switch{position:relative; width:40px; height:22px; flex:none;}
+  .switch input{opacity:0; width:0; height:0;}
+  .slider{position:absolute; inset:0; background:var(--line-strong); border-radius:99px; cursor:pointer; transition:.15s;}
+  .slider::before{content:''; position:absolute; width:16px; height:16px; left:3px; top:3px; background:var(--white); border-radius:50%; transition:.15s;}
+  .switch input:checked + .slider{background:var(--green);}
+  .switch input:checked + .slider::before{transform:translateX(18px);}
+  .toggle-status{font-size:12.5px; font-weight:600; color:var(--gray); min-width:44px;}
+  .day-card input[type=time]{background:var(--white); border:1px solid var(--line-strong); border-radius:8px; padding:9px 10px; font-size:13.5px; width:100%;}
+  .day-card.closed input[type=time]{opacity:0.4; pointer-events:none; background:var(--paper);}
+  .day-card.closed .day-name{color:var(--gray-light);}
+  .holiday-card{background:var(--white); border:1px solid var(--line-strong); border-radius:11px; padding:16px; margin-bottom:12px; position:relative;}
+  .holiday-card .remove{position:absolute; top:10px; right:10px; background:none; border:none; color:var(--gray-light); font-size:16px; cursor:pointer;}
+  .holiday-card .remove:hover{color:var(--danger);}
+  .holiday-grid{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:12px;}
+  @media (max-width:640px){.holiday-grid{grid-template-columns:1fr;}}
+  .holiday-grid .field{margin-bottom:0;}
+  .empty-holidays{font-size:13px; color:var(--gray-light); margin-bottom:14px;}
+
+  /* services/amenities cards */
+  .card-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(160px, 1fr)); gap:12px; margin-bottom:16px;}
+  .card{position:relative; background:var(--white); border:1.5px solid var(--line-strong); border-radius:12px; padding:18px 14px; display:flex; flex-direction:column; align-items:flex-start; gap:12px; cursor:pointer; transition:all .15s ease; user-select:none;}
+  .card:hover{border-color:var(--gray-light);}
+  .card.on{border-color:var(--green); background:var(--green-tint);}
+  .card-icon{width:34px; height:34px; display:flex; align-items:center; justify-content:center; color:var(--ink); transition:color .15s ease;}
+  .card.on .card-icon{color:var(--green-dark);}
+  .card-icon svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
+  .card-name{font-size:13.5px; font-weight:600; color:var(--black); line-height:1.3;}
+  .card-check{position:absolute; top:12px; right:12px; width:18px; height:18px; border-radius:5px; border:1.5px solid var(--line-strong); background:var(--white); display:flex; align-items:center; justify-content:center; transition:all .15s ease;}
+  .card.on .card-check{background:var(--green); border-color:var(--green);}
+  .card-check svg{width:11px; height:11px; stroke:var(--white); fill:none; stroke-width:3; opacity:0;}
+  .card.on .card-check svg{opacity:1;}
+  .card.custom{border-style:dashed;}
+  .card .remove-custom{position:absolute; bottom:10px; right:12px; font-size:11px; color:var(--gray-light); background:none; border:none; cursor:pointer; font-weight:600;}
+  .card .remove-custom:hover{color:var(--danger);}
+  .selected-count{font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--green-dark); background:var(--green-tint); padding:5px 11px; border-radius:99px; border:1px solid rgba(14,124,74,0.18); font-weight:600;}
+  .custom-input-row{display:flex; gap:10px; margin-bottom:16px;}
+  .custom-input-row input{flex:1; background:var(--white); border:1px solid var(--line-strong); border-radius:9px; padding:11px 13px; font-size:14px; outline:none;}
+  .custom-input-row input:focus{border-color:var(--green);}
+  .custom-input-row button{background:var(--green); color:var(--white); border:none; border-radius:9px; padding:0 18px; font-size:13.5px; font-weight:700; cursor:pointer;}
+  .custom-input-row button:hover{background:var(--green-dark);}
+  .custom-input-row .cancel{background:none; color:var(--gray); border:1px solid var(--line-strong);}
+  .custom-input-row .cancel:hover{color:var(--black); background:none;}
+
+  /* generic add button */
+  .add-btn{background:none; border:1px dashed var(--line-strong); color:var(--gray); padding:12px; width:100%; border-radius:10px; cursor:pointer; font-size:13.5px; font-weight:700; transition:all .15s ease;}
+  .add-btn:hover{border-color:var(--green); color:var(--green-dark);}
+
+  /* plans */
+  .plans-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:14px; margin-bottom:18px;}
+  .plan-card{background:var(--white); border:1.5px solid var(--line-strong); border-radius:14px; padding:20px; display:flex; flex-direction:column; position:relative;}
+  .plan-card-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
+  .plan-name{font-family:'JetBrains Mono',monospace; font-size:12.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--green-dark);}
+  .plan-reorder{display:flex; flex-direction:column; gap:2px;}
+  .reorder-btn{background:none; border:none; color:var(--gray-light); cursor:pointer; width:20px; height:16px; display:flex; align-items:center; justify-content:center; padding:0;}
+  .reorder-btn:hover{color:var(--black);} .reorder-btn:disabled{opacity:0.25; cursor:not-allowed;}
+  .reorder-btn svg{width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2.4;}
+  .plan-price{font-size:26px; font-weight:800; letter-spacing:-0.01em; margin-bottom:2px;}
+  .plan-duration{font-size:12.5px; color:var(--gray); margin-bottom:16px;}
+  .plan-features{list-style:none; margin:0 0 18px; padding:0; flex:1;}
+  .plan-features li{font-size:13px; color:var(--ink); padding:6px 0 6px 20px; position:relative; border-top:1px solid var(--line);}
+  .plan-features li:first-child{border-top:none;}
+  .plan-features li::before{content:''; position:absolute; left:0; top:12px; width:8px; height:8px; border-radius:50%; background:var(--green-tint); border:1.5px solid var(--green);}
+  .plan-features-empty{font-size:12.5px; color:var(--gray-light); font-style:italic; margin-bottom:18px;}
+  .plan-actions{display:flex; gap:14px; padding-top:14px; border-top:1px solid var(--line);}
+  .plan-actions button{background:none; border:none; font-size:12.5px; font-weight:700; cursor:pointer; padding:0;}
+  .plan-actions .edit-btn{color:var(--green-dark);} .plan-actions .delete-btn{color:var(--danger);}
+  .empty-plans{border:1.5px dashed var(--line-strong); border-radius:14px; padding:40px 20px; text-align:center; color:var(--gray-light); font-size:13.5px; margin-bottom:18px;}
+  .form-panel{display:none; background:var(--white); border:1.5px solid var(--line-strong); border-radius:14px; padding:26px; margin-top:20px;}
+  .form-panel.open{display:block;}
+  .form-panel-title{font-size:16px; font-weight:800; margin:0 0 20px;}
+  .feature-row{display:flex; gap:8px; margin-bottom:9px;}
+  .feature-row input{flex:1; background:var(--paper); border:1px solid var(--line-strong); border-radius:9px; padding:10px 12px; font-size:13.5px; outline:none;}
+  .feature-row button{background:none; border:1px solid var(--line-strong); color:var(--gray); border-radius:8px; width:36px; cursor:pointer; font-size:14px;}
+  .feature-row button:hover{color:var(--danger); border-color:var(--danger);}
+  .add-feature-btn{background:none; border:1px dashed var(--line-strong); color:var(--gray); padding:9px; width:100%; border-radius:9px; cursor:pointer; font-size:12.5px; font-weight:700; transition:all .15s ease; margin-bottom:20px;}
+  .add-feature-btn:hover{border-color:var(--green); color:var(--green-dark);}
+  .form-actions{display:flex; justify-content:flex-end; gap:10px; padding-top:16px; border-top:1px solid var(--line);}
+
+  /* gallery */
+  .gallery-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:14px; margin:20px 0 10px;}
+  .photo-card{background:var(--white); border:1.5px solid var(--line-strong); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; position:relative;}
+  .photo-card.is-cover{border-color:var(--green);}
+  .photo-media{position:relative; width:100%; aspect-ratio:4/3; background:var(--line); overflow:hidden;}
+  .photo-media img{width:100%; height:100%; object-fit:cover; display:block;}
+  .cover-badge{position:absolute; top:10px; left:10px; background:var(--green); color:var(--white); font-size:10.5px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase; padding:5px 10px; border-radius:99px; display:flex; align-items:center; gap:5px;}
+  .cover-badge svg{width:10px; height:10px; stroke:var(--white); fill:none; stroke-width:3;}
+  .reorder-overlay{position:absolute; top:8px; right:8px; display:flex; flex-direction:column; gap:3px;}
+  .gal-reorder-btn{width:24px; height:20px; background:rgba(14,15,17,0.55); border:none; border-radius:6px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .gal-reorder-btn svg{width:12px; height:12px; stroke:var(--white); fill:none; stroke-width:2.6;}
+  .gal-reorder-btn:hover{background:rgba(14,15,17,0.8);}
+  .gal-reorder-btn:disabled{opacity:0.3; cursor:not-allowed;}
+  .delete-overlay{position:absolute; bottom:8px; right:8px; width:26px; height:26px; background:rgba(14,15,17,0.55); border:none; border-radius:7px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .delete-overlay svg{width:13px; height:13px; stroke:var(--white); fill:none; stroke-width:2.2;}
+  .delete-overlay:hover{background:var(--danger);}
+  .photo-meta{padding:12px 14px 14px;}
+  .photo-meta select{width:100%; background:var(--paper); border:1px solid var(--line-strong); color:var(--black); border-radius:8px; padding:8px 10px; font-size:12.5px; font-family:'Inter',sans-serif; outline:none; margin-bottom:10px;}
+  .set-cover-btn{width:100%; background:none; border:1px solid var(--line-strong); color:var(--ink); border-radius:8px; padding:8px; font-size:12px; font-weight:700; cursor:pointer; transition:all .15s ease;}
+  .set-cover-btn:hover{border-color:var(--green); color:var(--green-dark);}
+  .set-cover-btn.active{background:var(--green-tint); border-color:var(--green); color:var(--green-dark); cursor:default;}
+  .empty-state{text-align:center; padding:30px 20px; color:var(--gray-light); font-size:13.5px; margin-bottom:14px;}
+
+  /* review */
+  .head-row{display:flex; justify-content:space-between; align-items:flex-end; gap:16px; margin:28px 0 34px; flex-wrap:wrap;}
+  .completion{text-align:right; flex:none;}
+  .completion-ring{width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-left:auto;}
+  .completion-ring-inner{width:44px; height:44px; background:var(--white); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:700; color:var(--green-dark);}
+  .completion-label{font-size:11px; color:var(--gray); margin-top:6px; font-weight:600;}
+  .kv-list{display:flex; flex-direction:column;}
+  .kv-row{display:flex; gap:14px; font-size:13.5px; padding:8px 0; border-top:1px solid var(--line);}
+  .kv-row:first-child{border-top:none;}
+  .kv-k{min-width:150px; flex:none; color:var(--gray); font-weight:600;}
+  .kv-v{color:var(--black); line-height:1.5;}
+  .contact-grid{display:grid; grid-template-columns:1fr 1fr; gap:0 20px;}
+  @media (max-width:560px){.contact-grid{grid-template-columns:1fr;}}
+  .brand-preview{display:flex; gap:20px; margin-bottom:20px; flex-wrap:wrap;}
+  .map-embed{width:100%; height:180px; border-radius:10px; border:1px solid var(--line-strong); margin-top:14px; overflow:hidden;}
+  .map-embed iframe{width:100%; height:100%; border:0;}
+  .hours-row{display:flex; justify-content:space-between; font-size:13.5px; padding:7px 0; border-top:1px solid var(--line);}
+  .hours-row:first-child{border-top:none;}
+  .hours-row .day{font-weight:600;} .hours-row .time{color:var(--gray);}
+  .hours-row.closed .time{color:var(--gray-light); font-style:italic;}
+  .holiday-list{margin-top:16px; padding-top:14px; border-top:1px dashed var(--line-strong);}
+  .holiday-list-title{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--gray); margin-bottom:10px;}
+  .holiday-row{display:flex; justify-content:space-between; font-size:13px; padding:6px 0;}
+  .holiday-row .tag{font-size:11px; font-weight:700; color:var(--green-dark); background:var(--green-tint); padding:2px 9px; border-radius:99px; border:1px solid rgba(14,124,74,0.18);}
+  .pill-list{display:flex; flex-wrap:wrap; gap:8px;}
+  .pill{font-size:13px; font-weight:600; color:var(--ink); background:var(--paper); border:1px solid var(--line-strong); padding:7px 14px; border-radius:99px;}
+  .plan-mini{border:1px solid var(--line-strong); border-radius:11px; padding:14px; background:var(--paper);}
+  .plan-mini-name{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--green-dark); margin-bottom:6px;}
+  .plan-mini-price{font-size:19px; font-weight:800; margin-bottom:2px;}
+  .plan-mini-duration{font-size:12px; color:var(--gray); margin-bottom:10px;}
+  .plan-mini-features{list-style:none; margin:0; padding:0;}
+  .plan-mini-features li{font-size:12px; color:var(--ink); padding:4px 0 4px 14px; position:relative;}
+  .plan-mini-features li::before{content:''; position:absolute; left:0; top:9px; width:5px; height:5px; border-radius:50%; background:var(--green);}
+  .review-gallery-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(110px, 1fr)); gap:10px;}
+  .review-gallery-thumb{aspect-ratio:4/3; border-radius:9px; border:1px solid var(--line-strong); overflow:hidden; position:relative;}
+  .review-gallery-thumb.cover{border-color:var(--green); border-width:2px;}
+  .review-gallery-thumb img{width:100%; height:100%; object-fit:cover;}
+  .review-gallery-thumb .cover-tag{position:absolute; top:6px; right:6px; font-size:9px; font-weight:700; color:var(--white); background:var(--green); padding:3px 7px; border-radius:99px; text-transform:uppercase;}
+  .validation-banner{background:#FDECEA; border:1px solid #E7A8A0; color:#8A2E22; border-radius:10px; padding:14px 18px; font-size:13.5px; margin-bottom:18px; line-height:1.6;}
+
+  /* footer nav + buttons */
+  .footer-actions{display:flex; justify-content:space-between; align-items:center; margin-top:28px; padding-top:24px; border-top:1px solid var(--line);}
+  .btn{font-family:'Inter',sans-serif; font-weight:700; font-size:14.5px; padding:13px 26px; border-radius:10px; cursor:pointer; transition:all .15s ease; border:none;}
+  .btn-ghost{background:none; color:var(--gray); border:1px solid var(--line-strong);}
+  .btn-ghost:hover{color:var(--black); border-color:var(--gray-light);}
+  .btn-primary{background:var(--green); color:var(--white);}
+  .btn-primary:hover{background:var(--green-dark);}
+  .btn-primary:disabled{opacity:0.5; cursor:not-allowed;}
+  .edit-btn{background:none; border:1px solid var(--line-strong); color:var(--ink); padding:7px 14px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer; transition:all .15s ease;}
+  .edit-btn:hover{border-color:var(--green); color:var(--green-dark);}
+
+  /* modal */
+  .modal-backdrop{position:fixed; inset:0; background:rgba(14,15,17,0.5); display:none; align-items:center; justify-content:center; padding:20px; z-index:1000;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--white); border-radius:16px; padding:30px 28px; max-width:400px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.18);}
+  .modal h3{font-size:19px; font-weight:800; margin:0 0 10px;}
+  .modal p{font-size:13.5px; color:var(--gray); line-height:1.6; margin:0 0 24px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px;}
+
+  /* success */
+  .success-card{width:100%; max-width:560px; background:var(--white); border:1px solid var(--line-strong); border-radius:18px; padding:48px 44px 40px; text-align:center;}
+  @media (max-width:520px){.success-card{padding:36px 24px 28px;}}
+  .check-badge{width:64px; height:64px; border-radius:50%; background:var(--green-tint); border:2px solid var(--green); display:flex; align-items:center; justify-content:center; margin:0 auto 26px;}
+  .check-badge svg{width:28px; height:28px; stroke:var(--green-dark); fill:none; stroke-width:2.6; stroke-linecap:round; stroke-linejoin:round;}
+  .success-card h1{font-size:25px; font-weight:800; letter-spacing:-0.01em; margin:0 0 12px; line-height:1.3;}
+  .success-card .lede{font-size:14.5px; color:var(--gray); line-height:1.65; max-width:42ch; margin:0 auto 32px;}
+  .status-list{background:var(--light-gray); border-radius:12px; padding:6px 20px; text-align:left; margin-bottom:28px;}
+  .status-row{display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--line-strong); font-size:13.5px; font-weight:600; color:var(--ink);}
+  .status-row:last-child{border-bottom:none;}
+  .status-check{width:20px; height:20px; border-radius:50%; flex:none; background:var(--green); display:flex; align-items:center; justify-content:center;}
+  .status-check svg{width:11px; height:11px; stroke:var(--white); fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round;}
+  .id-block{background:var(--paper); border:1px dashed var(--line-strong); border-radius:10px; padding:14px 18px; margin-bottom:24px;}
+  .id-label{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase; color:var(--gray-light); margin-bottom:6px;}
+  .id-value{font-family:'JetBrains Mono',monospace; font-size:16px; font-weight:700; color:var(--black); letter-spacing:0.03em;}
+  .next-step{font-size:13px; color:var(--gray); background:var(--green-tint); border:1px solid rgba(14,124,74,0.18); border-radius:10px; padding:12px 16px; margin-bottom:32px; text-align:left; line-height:1.55;}
+  .next-step b{color:var(--green-dark); display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; font-family:'JetBrains Mono',monospace;}
+  .success-actions{display:flex; flex-direction:column; gap:10px;}
+  .success-actions .btn{width:100%;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wordmark">FIT<span>AVAL</span></div>
+  <div class="topbar-note" id="topbarNote">Gym Partner Onboarding</div>
+</div>
+
+<div id="app"></div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Ready to submit?</h3>
+    <p>Your gym information will be sent to the FITAVAL team for review.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modalCancel">Cancel</button>
+      <button class="btn btn-primary" id="modalSubmit">Submit Profile</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =========================================================================
+   FITAVAL — combined onboarding app
+   One shared `state` object flows through every step below. Nothing is
+   sent anywhere until Step 7's Submit — see submitToBackend() near the
+   bottom for how that hands off to the real backend
+   (fitaval-backend-server.js), which is the only place the admin
+   inbox address is allowed to live.
+   ========================================================================= */
+
+const PHASES = ["Landing","Basic Information","Location & Hours","Services & Amenities","Membership Plans","Photo Gallery","Review & Submit"];
+
+const state = {
+  step: 1,
+  basicInfo: { logo:null, banner:null, gymName:"", tagline:"", description:"", phone:"", email:"", website:"", instagram:"", whatsapp:"" },
+  location: { address:"", city:"", state:"", pincode:"", country:"", lat:10.5276, lng:76.2144, confirmed:false },
+  hours: {
+    Monday:{open:true,start:"06:00",end:"22:00"}, Tuesday:{open:true,start:"06:00",end:"22:00"},
+    Wednesday:{open:true,start:"06:00",end:"22:00"}, Thursday:{open:true,start:"06:00",end:"22:00"},
+    Friday:{open:true,start:"06:00",end:"22:00"}, Saturday:{open:true,start:"07:00",end:"20:00"},
+    Sunday:{open:false,start:"07:00",end:"13:00"},
+  },
+  holidays: [],
+  services: [
+    {id:'weight-area', name:'Weight Area', icon:'dumbbell', selected:false, custom:false},
+    {id:'cardio-zone', name:'Cardio Zone', icon:'pulse', selected:false, custom:false},
+    {id:'crossfit', name:'CrossFit', icon:'kettlebell', selected:false, custom:false},
+    {id:'zumba', name:'Zumba', icon:'music', selected:false, custom:false},
+    {id:'yoga', name:'Yoga', icon:'lotus', selected:false, custom:false},
+    {id:'spinning', name:'Spinning', icon:'bike', selected:false, custom:false},
+    {id:'pilates', name:'Pilates', icon:'mat', selected:false, custom:false},
+    {id:'boxing', name:'Boxing', icon:'glove', selected:false, custom:false},
+    {id:'swimming-pool', name:'Swimming Pool', icon:'waves', selected:false, custom:false},
+    {id:'diet-counselling', name:'Diet Counselling', icon:'apple', selected:false, custom:false},
+    {id:'massage-spa', name:'Massage / Spa', icon:'leaf', selected:false, custom:false},
+  ],
+  amenities: [
+    {id:'free-parking', name:'Free Parking', icon:'parking', selected:false, custom:false},
+    {id:'showers', name:'Showers', icon:'shower', selected:false, custom:false},
+    {id:'lockers', name:'Lockers', icon:'locker', selected:false, custom:false},
+    {id:'free-wifi', name:'Free WiFi', icon:'wifi', selected:false, custom:false},
+    {id:'juice-bar', name:'Juice Bar', icon:'juice', selected:false, custom:false},
+    {id:'steam-room', name:'Steam Room', icon:'steam', selected:false, custom:false},
+    {id:'first-aid', name:'First Aid', icon:'firstaid', selected:false, custom:false},
+    {id:'children-park', name:'Children Park', icon:'park', selected:false, custom:false},
+    {id:'air-conditioning', name:'Air Conditioning', icon:'snowflake', selected:false, custom:false},
+    {id:'entertainment', name:'Entertainment', icon:'tv', selected:false, custom:false},
+  ],
+  plans: [
+    { name:"Daily Pass", price:"70", duration:"Daily", durationLabel:"1 Day", features:["Full gym access"] },
+    { name:"Monthly", price:"499", duration:"Monthly", durationLabel:"1 Month", features:["Full gym access","Group classes"] },
+    { name:"Quarterly", price:"1,299", duration:"Quarterly", durationLabel:"3 Months", features:["Full gym access","Group classes","Locker"] },
+    { name:"Half Yearly", price:"2,499", duration:"Half Yearly", durationLabel:"6 Months", features:["Full gym access","Group classes","Locker","Guest pass"] },
+    { name:"Yearly", price:"4,499", duration:"Yearly", durationLabel:"12 Months", features:["Full gym access","Group classes","Locker","Personal training","Guest pass"] },
+  ],
+  editingPlanIndex: null,
+  images: [], // { id, src, category, isCover }
+  lastSubmissionId: null,
+};
+
+const DURATION_LABELS = { Daily:"1 Day", Monthly:"1 Month", Quarterly:"3 Months", "Half Yearly":"6 Months", Yearly:"12 Months" };
+const CATEGORIES = ["Gym Interior","Equipment","Facilities","Classes","Exterior","Other"];
+
+const ICONS = {
+  dumbbell: `<svg viewBox="0 0 24 24"><rect x="2" y="9" width="3" height="6" rx="1"/><rect x="19" y="9" width="3" height="6" rx="1"/><rect x="6" y="7" width="2.5" height="10" rx="1"/><rect x="15.5" y="7" width="2.5" height="10" rx="1"/><line x1="8.5" y1="12" x2="15.5" y2="12"/></svg>`,
+  pulse: `<svg viewBox="0 0 24 24"><path d="M2 12h4l2 7 4-14 2 7h8"/></svg>`,
+  kettlebell: `<svg viewBox="0 0 24 24"><path d="M9 8a3 3 0 0 1 6 0"/><rect x="6" y="8" width="12" height="12" rx="6"/></svg>`,
+  music: `<svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>`,
+  lotus: `<svg viewBox="0 0 24 24"><path d="M12 21c-4-2-6-5-6-9 3 0 5 2 6 5 1-3 3-5 6-5 0 4-2 7-6 9Z"/><path d="M12 12V3"/></svg>`,
+  bike: `<svg viewBox="0 0 24 24"><circle cx="6" cy="17" r="3.5"/><circle cx="18" cy="17" r="3.5"/><path d="M6 17l4-9h4l3 5"/><path d="M10 8h4"/></svg>`,
+  mat: `<svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="6" rx="2"/><line x1="7" y1="9" x2="7" y2="15"/><line x1="17" y1="9" x2="17" y2="15"/></svg>`,
+  glove: `<svg viewBox="0 0 24 24"><path d="M6 12V6a2 2 0 0 1 4 0v4"/><path d="M10 10V5a2 2 0 0 1 4 0v5"/><path d="M14 10V6a2 2 0 0 1 4 0v6"/><path d="M6 12a4 4 0 0 0 4 8h4a5 5 0 0 0 5-5v-2"/></svg>`,
+  waves: `<svg viewBox="0 0 24 24"><path d="M2 9c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>`,
+  apple: `<svg viewBox="0 0 24 24"><path d="M12 8c-3 0-5 2.5-5 6s2.5 8 5 8 2-1 3-1 0.5 1 2 1c2.5 0 5-4.5 5-8-3 0-4-2-4-3"/><path d="M12 8c0-2 1-4 3-4"/></svg>`,
+  leaf: `<svg viewBox="0 0 24 24"><path d="M4 20c8 0 16-6 16-16-10 0-16 6-16 16Z"/><path d="M4 20c4-5 8-9 12-12"/></svg>`,
+  parking: `<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M9 17V7h3.5a3 3 0 0 1 0 6H9"/></svg>`,
+  shower: `<svg viewBox="0 0 24 24"><path d="M4 8a6 6 0 0 1 12 0"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="6" y1="12" x2="6" y2="12.01"/><line x1="10" y1="14" x2="10" y2="14.01"/><line x1="14" y1="12" x2="14" y2="12.01"/><line x1="8" y1="17" x2="8" y2="17.01"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>`,
+  locker: `<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1"/><line x1="12" y1="3" x2="12" y2="21"/><circle cx="9" cy="12" r="0.6" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="0.6" fill="currentColor" stroke="none"/></svg>`,
+  wifi: `<svg viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0"/><path d="M5.5 13a10 10 0 0 1 13 0"/><path d="M9 17a5 5 0 0 1 6 0"/><line x1="12" y1="20" x2="12" y2="20.01"/></svg>`,
+  juice: `<svg viewBox="0 0 24 24"><path d="M7 3h10l-1.5 17a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1Z"/><line x1="6.5" y1="8" x2="17.5" y2="8"/></svg>`,
+  steam: `<svg viewBox="0 0 24 24"><path d="M5 21c1-4-2-4-1-8"/><path d="M12 21c1-5-3-5-1-11"/><path d="M19 21c1-4-2-4-1-8"/></svg>`,
+  firstaid: `<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M9 6V5a3 3 0 0 1 6 0v1"/><line x1="12" y1="10" x2="12" y2="16"/><line x1="9" y1="13" x2="15" y2="13"/></svg>`,
+  park: `<svg viewBox="0 0 24 24"><path d="M4 21l4-9"/><path d="M8 12L5 6l6 2 6-2-3 6"/><line x1="8" y1="12" x2="14" y2="21"/><line x1="14" y1="12" x2="14" y2="21"/></svg>`,
+  snowflake: `<svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4" y1="7" x2="20" y2="17"/><line x1="20" y1="7" x2="4" y2="17"/></svg>`,
+  tv: `<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>`,
+  tag: `<svg viewBox="0 0 24 24"><path d="M20 12l-8 8-9-9V4h7Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>`,
+};
+const CHECK_SVG = `<svg viewBox="0 0 24 24"><polyline points="4 12 9 17 20 6"/></svg>`;
+const CHEV_UP = `<svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"/></svg>`;
+const CHEV_DOWN = `<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>`;
+const CHEV_LEFT = `<svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>`;
+const CHEV_RIGHT = `<svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>`;
+const TRASH = `<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
+
+let mapInstance = null, mapMarker = null;
+const app = document.getElementById('app');
+
+function goto(step){ state.step = step; render(); window.scrollTo(0,0); }
+
+function ledgerHTML(filledCount){
+  let ticks = '';
+  for(let i=0;i<7;i++) ticks += `<div class="tick ${i<filledCount ? 'filled' : ''}"></div>`;
+  return ticks;
+}
+
+function progressHead(stepNum, phaseLabel){
+  document.getElementById('topbarNote').textContent = phaseLabel;
+  return `
+    <div class="progress-head">
+      <div class="progress-row">
+        <div class="progress-label"><b>Step ${stepNum}</b> of 7</div>
+        <div class="progress-phase">${phaseLabel}</div>
+      </div>
+      <div class="ledger-track">${ledgerHTML(stepNum)}</div>
+    </div>`;
+}
+
+function render(){
+  if(state.step === 1) return renderLanding();
+  if(state.step === 2) return renderBasicProfile();
+  if(state.step === 3) return renderLocationHours();
+  if(state.step === 4) return renderServicesAmenities();
+  if(state.step === 5) return renderMembershipPlans();
+  if(state.step === 6) return renderPhotoGallery();
+  if(state.step === 7) return renderReview();
+  if(state.step === 'success') return renderSuccess();
+}
+
+/* ============================= STEP 1: LANDING ============================= */
+function renderLanding(){
+  document.getElementById('topbarNote').textContent = 'Gym Partner Onboarding';
+  app.innerHTML = `
+    <div class="stage">
+      <div class="landing">
+        <div class="eyebrow">Business registration</div>
+        <h1>List Your Gym on FITAVAL</h1>
+        <p class="lede">Help fitness enthusiasts discover your gym, services, facilities and membership plans.</p>
+        <div class="ledger center">
+          <div class="ledger-track">${ledgerHTML(1)}</div>
+          <div class="ledger-label"><b>Step 1</b> of 7</div>
+        </div>
+        <button class="cta" id="startBtn">Create Gym Profile</button>
+        <div class="cta-sub">It only takes a few minutes.</div>
+        <div class="reassure">
+          <div class="reassure-item"><span class="dot"></span>No login required</div>
+          <div class="reassure-item"><span class="dot"></span>No password needed</div>
+          <div class="reassure-item"><span class="dot"></span>Just your gym details</div>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('startBtn').addEventListener('click', ()=> goto(2));
+}
+
+/* ========================= STEP 2: BASIC PROFILE ========================= */
+function renderBasicProfile(){
+  const b = state.basicInfo;
+  app.innerHTML = `
+    <div class="wrap">
+      ${progressHead(1, 'Basic Information')}
+      <h1>Tell us about your gym</h1>
+      <p class="lede">Add the basic information members need to know about your gym.</p>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Gym Branding</span></div></div>
+        <div class="upload-row">
+          <div class="upload-card">
+            <div class="upload-card-label">Gym Logo <span class="req">*</span></div>
+            <div class="upload-card-hint">Recommended: square image</div>
+            <div id="logoZoneWrap"></div>
+            <input type="file" id="logoInput" accept="image/*" style="display:none">
+          </div>
+          <div class="upload-card">
+            <div class="upload-card-label">Gym Banner</div>
+            <div class="upload-card-hint">Recommended: wide image, 1200×400</div>
+            <div id="bannerZoneWrap"></div>
+            <input type="file" id="bannerInput" accept="image/*" style="display:none">
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Gym Information</span></div></div>
+        <div class="field"><label>Gym Name <span class="req">*</span></label><input type="text" id="gymName" value="${b.gymName}" placeholder="Iron Circuit Fitness"></div>
+        <div class="field"><label>Tagline</label><input type="text" id="tagline" value="${b.tagline}" placeholder="Strength. Discipline. Community."></div>
+        <div class="field"><label>Gym Description</label><textarea id="gymDesc" placeholder="Tell members what makes your gym unique.">${b.description}</textarea></div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Contact</span></div></div>
+        <div class="grid2">
+          <div class="field"><label>Phone Number <span class="req">*</span></label><input type="tel" id="phone" value="${b.phone}" placeholder="+91 90000 00000"></div>
+          <div class="field"><label>Email Address <span class="req">*</span></label><input type="email" id="email" value="${b.email}" placeholder="you@gym.com"></div>
+          <div class="field"><label>Website</label><input type="text" id="website" value="${b.website}" placeholder="www.yourgym.com"></div>
+          <div class="field"><label>Instagram</label><input type="text" id="instagram" value="${b.instagram}" placeholder="@yourgym"></div>
+        </div>
+        <div class="field"><label>WhatsApp</label><input type="tel" id="whatsapp" value="${b.whatsapp}" placeholder="+91 90000 00000"></div>
+      </section>
+
+      <div class="footer-actions">
+        <button class="btn btn-ghost" id="backBtn">Back</button>
+        <button class="btn btn-primary" id="continueBtn">Save & Continue</button>
+      </div>
+    </div>`;
+
+  wireUpload({ zoneWrapId:'logoZoneWrap', inputId:'logoInput', stateKey:'logo', square:true });
+  wireUpload({ zoneWrapId:'bannerZoneWrap', inputId:'bannerInput', stateKey:'banner', square:false });
+
+  ['gymName','tagline','gymDesc','phone','email','website','instagram','whatsapp'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', e=>{
+      const key = id === 'gymDesc' ? 'description' : id;
+      b[key] = e.target.value;
+    });
+  });
+
+  document.getElementById('backBtn').addEventListener('click', ()=> goto(1));
+  document.getElementById('continueBtn').addEventListener('click', ()=>{
+    const required = ['gymName','phone','email'];
+    let missing = required.filter(id => !document.getElementById(id).value.trim());
+    if(!b.logo) missing.push('logo-check');
+    if(missing.length){
+      required.forEach(id=>{
+        const f = document.getElementById(id);
+        if(!f.value.trim()){ f.classList.add('invalid'); f.addEventListener('input', ()=> f.classList.remove('invalid'), {once:true}); }
+      });
+      if(!b.logo) document.getElementById('logoZoneWrap').scrollIntoView({behavior:'smooth', block:'center'});
+      else document.getElementById(missing[0]).scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    goto(3);
+  });
+}
+
+function wireUpload({ zoneWrapId, inputId, stateKey, square }){
+  const wrap = document.getElementById(zoneWrapId);
+  const input = document.getElementById(inputId);
+  const b = state.basicInfo;
+
+  function renderEmpty(){
+    wrap.innerHTML = `<div class="dropzone" id="${zoneWrapId}_zone">Drag & drop, or <span class="browse">browse ${square ? 'files' : ''}</span></div>`;
+    bindZone();
+  }
+  function renderPreview(src){
+    if(square){
+      wrap.innerHTML = `<div class="logo-preview-wrap"><img class="logo-thumb" src="${src}"><div class="preview-actions"><button class="text-btn change" id="${zoneWrapId}_change">Change</button><button class="text-btn remove" id="${zoneWrapId}_remove">Remove</button></div></div>`;
+    } else {
+      wrap.innerHTML = `<img class="banner-thumb" src="${src}"><div class="preview-actions"><button class="text-btn change" id="${zoneWrapId}_change">Replace</button><button class="text-btn remove" id="${zoneWrapId}_remove">Remove</button></div>`;
+    }
+    document.getElementById(`${zoneWrapId}_change`).addEventListener('click', ()=> input.click());
+    document.getElementById(`${zoneWrapId}_remove`).addEventListener('click', ()=>{ b[stateKey] = null; renderEmpty(); });
+  }
+  function bindZone(){
+    const zone = document.getElementById(`${zoneWrapId}_zone`);
+    zone.addEventListener('click', ()=> input.click());
+    zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', ()=> zone.classList.remove('drag'));
+    zone.addEventListener('drop', e=>{ e.preventDefault(); zone.classList.remove('drag'); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+  }
+  function handleFile(file){
+    const reader = new FileReader();
+    reader.onload = ev => {
+      b[stateKey] = {
+        base64: ev.target.result,
+        name: file.name,
+        type: file.type || 'image/png'
+      };
+      renderPreview(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  input.addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+
+  if(b[stateKey]) renderPreview(typeof b[stateKey] === 'object' ? b[stateKey].base64 : b[stateKey]); else renderEmpty();
+}
+
+/* ====================== STEP 3: LOCATION & HOURS ====================== */
+function renderLocationHours(){
+  const l = state.location;
+  app.innerHTML = `
+    <div class="wrap">
+      ${progressHead(2, 'Location & Hours')}
+      <h1>Where is your gym located?</h1>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Location</span></div></div>
+        <div class="field"><label>Address <span class="req">*</span></label><input type="text" id="address" value="${l.address}" placeholder="Building, street, area"></div>
+        <div class="grid4">
+          <div class="field"><label>City <span class="req">*</span></label><input type="text" id="city" value="${l.city}" placeholder="City"></div>
+          <div class="field"><label>State <span class="req">*</span></label><input type="text" id="state" value="${l.state}" placeholder="State"></div>
+          <div class="field"><label>Pincode <span class="req">*</span></label><input type="text" id="pincode" value="${l.pincode}" placeholder="680001"></div>
+          <div class="field"><label>Country <span class="req">*</span></label><input type="text" id="country" value="${l.country}" placeholder="India"></div>
+        </div>
+        <div class="map-search-row">
+          <input type="text" id="mapSearch" placeholder="Search for your gym's location">
+          <button class="map-btn" id="currentLocBtn">Use current location</button>
+          <div class="suggest-list" id="suggestList"></div>
+        </div>
+        <div id="mapEl"></div>
+        <div class="map-actions">
+          <div class="location-caption" id="locationCaption">${l.confirmed ? `<span class="confirmed-tag">✓ Confirmed</span> Your gym location is set at <b>${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}</b>.` : `Drag the pin, search, or use current location to set <b>Your gym location</b>.`}</div>
+          <button class="confirm-btn" id="confirmLocBtn">Confirm location</button>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Operating Hours</span></div></div>
+        <div class="block-subheading">When is your gym open?</div>
+        <div class="apply-row"><button class="map-btn" id="applyMondayBtn">Apply Monday hours to weekdays</button></div>
+        <div id="hoursList"></div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Holidays & Closures</span></div></div>
+        <div class="empty-holidays" id="emptyHolidays">No holidays added yet — add any dates your gym will be closed or on special hours.</div>
+        <div id="holidayList"></div>
+        <button class="add-btn" id="addHolidayBtn">+ Add Holiday</button>
+      </section>
+
+      <div class="footer-actions">
+        <button class="btn btn-ghost" id="backBtn">Back</button>
+        <button class="btn btn-primary" id="continueBtn">Save & Continue</button>
+      </div>
+    </div>`;
+
+  ['address','city','state','pincode','country'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', e=>{ l[id] = e.target.value; });
+  });
+
+  // ---- map ----
+  if(mapInstance){ mapInstance.remove(); mapInstance = null; }
+  mapInstance = L.map('mapEl', { scrollWheelZoom:false }).setView([l.lat, l.lng], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap contributors', maxZoom:19 }).addTo(mapInstance);
+  mapMarker = L.marker([l.lat, l.lng], { draggable:true }).addTo(mapInstance);
+
+  function setLocation(lat, lng, label){
+    l.lat = lat; l.lng = lng; l.confirmed = false;
+    mapMarker.setLatLng([lat,lng]);
+    mapInstance.setView([lat,lng], 15);
+    document.getElementById('locationCaption').innerHTML = `${label ? '<b>'+label+'</b>' : `Pin at <b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b>`} — not yet confirmed.`;
+  }
+
+  mapMarker.on('dragend', ()=>{ const pos = mapMarker.getLatLng(); setLocation(pos.lat, pos.lng); reverseGeocode(pos.lat, pos.lng); });
+  mapInstance.on('click', e => { setLocation(e.latlng.lat, e.latlng.lng); reverseGeocode(e.latlng.lat, e.latlng.lng); });
+
+  let searchTimer;
+  const searchInput = document.getElementById('mapSearch');
+  const suggestList = document.getElementById('suggestList');
+  searchInput.addEventListener('input', ()=>{
+    clearTimeout(searchTimer);
+    const q = searchInput.value.trim();
+    if(q.length < 3){ suggestList.classList.remove('show'); return; }
+    searchTimer = setTimeout(async ()=>{
+      try{
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`);
+        const results = await res.json();
+        if(!results.length){ suggestList.classList.remove('show'); return; }
+        suggestList.innerHTML = results.map((r,i)=>`<div class="suggest-item" data-i="${i}">${r.display_name}</div>`).join('');
+        suggestList.classList.add('show');
+        suggestList.querySelectorAll('.suggest-item').forEach(item=>{
+          item.addEventListener('click', ()=>{
+            const r = results[item.dataset.i];
+            setLocation(parseFloat(r.lat), parseFloat(r.lon), r.display_name.split(',')[0]);
+            searchInput.value = r.display_name;
+            suggestList.classList.remove('show');
+            fillAddressFromResult(r);
+          });
+        });
+      }catch(err){ /* offline/blocked — no-op */ }
+    }, 400);
+  });
+  document.addEventListener('click', e=>{ if(!suggestList.contains(e.target) && e.target !== searchInput) suggestList.classList.remove('show'); });
+
+  document.getElementById('currentLocBtn').addEventListener('click', ()=>{
+    if(!navigator.geolocation){ alert('Geolocation is not available in this browser.'); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => { setLocation(pos.coords.latitude, pos.coords.longitude, 'Current location'); reverseGeocode(pos.coords.latitude, pos.coords.longitude); },
+      () => alert('Could not access your location. You can search or drop the pin manually instead.')
+    );
+  });
+
+  async function reverseGeocode(lat, lng){
+    try{
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+      const r = await res.json();
+      fillAddressFromResult(r);
+    }catch(err){ /* offline/blocked */ }
+  }
+  function fillAddressFromResult(r){
+    const a = r.address || {};
+    if(!document.getElementById('city').value) document.getElementById('city').value = a.city || a.town || a.village || '';
+    if(!document.getElementById('state').value) document.getElementById('state').value = a.state || '';
+    if(!document.getElementById('pincode').value) document.getElementById('pincode').value = a.postcode || '';
+    if(!document.getElementById('country').value) document.getElementById('country').value = a.country || '';
+    ['city','state','pincode','country'].forEach(id=>{ l[id] = document.getElementById(id).value; });
+  }
+
+  document.getElementById('confirmLocBtn').addEventListener('click', ()=>{
+    l.confirmed = true;
+    document.getElementById('locationCaption').innerHTML = `<span class="confirmed-tag">✓ Confirmed</span> Your gym location is set at <b>${l.lat.toFixed(5)}, ${l.lng.toFixed(5)}</b>.`;
+  });
+
+  // ---- hours ----
+  const hoursList = document.getElementById('hoursList');
+  const DAYS = Object.keys(state.hours);
+  function renderHours(){
+    hoursList.innerHTML = DAYS.map(day=>{
+      const d = state.hours[day];
+      return `<div class="day-card ${d.open ? '' : 'closed'}" data-day="${day}">
+        <div class="day-name">${day}</div>
+        <div class="toggle-wrap"><label class="switch"><input type="checkbox" data-day="${day}" data-field="open" ${d.open?'checked':''}><span class="slider"></span></label><span class="toggle-status">${d.open?'Open':'Closed'}</span></div>
+        <input type="time" data-day="${day}" data-field="start" value="${d.start}" ${d.open?'':'disabled'}>
+        <input type="time" data-day="${day}" data-field="end" value="${d.end}" ${d.open?'':'disabled'}>
+      </div>`;
+    }).join('');
+    hoursList.querySelectorAll('[data-field="open"]').forEach(cb => cb.addEventListener('change', e => { state.hours[e.target.dataset.day].open = e.target.checked; renderHours(); }));
+    hoursList.querySelectorAll('[data-field="start"],[data-field="end"]').forEach(inp => inp.addEventListener('input', e => { state.hours[e.target.dataset.day][e.target.dataset.field] = e.target.value; }));
+  }
+  renderHours();
+  document.getElementById('applyMondayBtn').addEventListener('click', ()=>{
+    const mon = state.hours.Monday;
+    ['Tuesday','Wednesday','Thursday','Friday'].forEach(d => state.hours[d] = {...mon});
+    renderHours();
+  });
+
+  // ---- holidays ----
+  const holidayList = document.getElementById('holidayList');
+  const emptyHolidays = document.getElementById('emptyHolidays');
+  function renderHolidays(){
+    emptyHolidays.style.display = state.holidays.length ? 'none' : 'block';
+    holidayList.innerHTML = state.holidays.map((h,i)=>`
+      <div class="holiday-card">
+        <button class="remove" data-remove="${i}">✕</button>
+        <div class="holiday-grid">
+          <div class="field"><label>Holiday name</label><input type="text" data-i="${i}" data-field="name" value="${h.name}" placeholder="e.g. Independence Day"></div>
+          <div class="field"><label>Date</label><input type="date" data-i="${i}" data-field="date" value="${h.date}"></div>
+          <div class="field"><label>Status</label><select data-i="${i}" data-field="status">
+            <option value="Closed" ${h.status==='Closed'?'selected':''}>Closed</option>
+            <option value="Special hours" ${h.status==='Special hours'?'selected':''}>Special hours</option>
+          </select></div>
+        </div>
+      </div>`).join('');
+    holidayList.querySelectorAll('[data-field]').forEach(inp => inp.addEventListener('input', e => { state.holidays[e.target.dataset.i][e.target.dataset.field] = e.target.value; }));
+    holidayList.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', ()=>{ state.holidays.splice(btn.dataset.remove,1); renderHolidays(); }));
+  }
+  document.getElementById('addHolidayBtn').addEventListener('click', ()=>{ state.holidays.push({name:"",date:"",status:"Closed"}); renderHolidays(); });
+  renderHolidays();
+
+  document.getElementById('backBtn').addEventListener('click', ()=> goto(2));
+  document.getElementById('continueBtn').addEventListener('click', ()=>{
+    const required = ['address','city','state','pincode','country'];
+    const missing = required.filter(id => !document.getElementById(id).value.trim());
+    if(missing.length){
+      missing.forEach(id=>{
+        const f = document.getElementById(id);
+        f.classList.add('invalid'); f.addEventListener('input', ()=> f.classList.remove('invalid'), {once:true});
+      });
+      document.getElementById(missing[0]).scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    if(!l.confirmed){
+      document.getElementById('mapEl').scrollIntoView({behavior:'smooth', block:'center'});
+      alert('Please confirm your gym location on the map before continuing.');
+      return;
+    }
+    goto(4);
+  });
+}
+
+/* ==================== STEP 4: SERVICES & AMENITIES ==================== */
+function renderServicesAmenities(){
+  app.innerHTML = `
+    <div class="wrap">
+      ${progressHead(3, 'Services & Amenities')}
+      <h1>What does your gym offer?</h1>
+      <p class="lede">Select the services and amenities available at your gym.</p>
+
+      <section class="block">
+        <div class="block-head">
+          <div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Services</span></div>
+          <span class="selected-count" id="servicesCount">0 services selected</span>
+        </div>
+        <div class="card-grid" id="servicesGrid"></div>
+        <div class="custom-input-row" id="serviceInputRow" style="display:none;">
+          <input type="text" id="customServiceInput" placeholder="Name your service">
+          <button id="addServiceConfirm">Add</button>
+          <button class="cancel" id="addServiceCancel">Cancel</button>
+        </div>
+        <button class="add-btn" id="addServiceBtn">+ Add Custom Service</button>
+      </section>
+
+      <section class="block">
+        <div class="block-head">
+          <div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Amenities</span></div>
+          <span class="selected-count" id="amenitiesCount">0 amenities selected</span>
+        </div>
+        <div class="card-grid" id="amenitiesGrid"></div>
+        <div class="custom-input-row" id="amenityInputRow" style="display:none;">
+          <input type="text" id="customAmenityInput" placeholder="Name your amenity">
+          <button id="addAmenityConfirm">Add</button>
+          <button class="cancel" id="addAmenityCancel">Cancel</button>
+        </div>
+        <button class="add-btn" id="addAmenityBtn">+ Add Custom Amenity</button>
+      </section>
+
+      <div class="footer-actions">
+        <button class="btn btn-ghost" id="backBtn">Back</button>
+        <button class="btn btn-primary" id="continueBtn">Save & Continue</button>
+      </div>
+    </div>`;
+
+  function renderCards(list, gridId, countId, label){
+    const grid = document.getElementById(gridId);
+    grid.innerHTML = list.map((item,i) => `
+      <div class="card ${item.selected?'on':''} ${item.custom?'custom':''}" data-i="${i}">
+        <div class="card-icon">${ICONS[item.icon] || ICONS.tag}</div>
+        <div class="card-name">${item.name}</div>
+        <div class="card-check">${CHECK_SVG}</div>
+        ${item.custom ? `<button class="remove-custom" data-remove="${i}">Remove</button>` : ''}
+      </div>`).join('');
+    grid.querySelectorAll('.card').forEach(card => card.addEventListener('click', e => {
+      if(e.target.closest('.remove-custom')) return;
+      list[card.dataset.i].selected = !list[card.dataset.i].selected;
+      renderCards(list, gridId, countId, label);
+    }));
+    grid.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation(); list.splice(btn.dataset.remove,1); renderCards(list, gridId, countId, label);
+    }));
+    document.getElementById(countId).textContent = `${list.filter(x=>x.selected).length} ${label} selected`;
+  }
+  const refreshServices = () => renderCards(state.services, 'servicesGrid', 'servicesCount', 'services');
+  const refreshAmenities = () => renderCards(state.amenities, 'amenitiesGrid', 'amenitiesCount', 'amenities');
+  refreshServices(); refreshAmenities();
+
+  const serviceInputRow = document.getElementById('serviceInputRow');
+  const customServiceInput = document.getElementById('customServiceInput');
+  document.getElementById('addServiceBtn').addEventListener('click', ()=>{ serviceInputRow.style.display='flex'; customServiceInput.focus(); });
+  document.getElementById('addServiceCancel').addEventListener('click', ()=>{ serviceInputRow.style.display='none'; customServiceInput.value=''; });
+  function addCustomService(){
+    const name = customServiceInput.value.trim(); if(!name) return;
+    state.services.push({id:'custom-'+Date.now(), name, icon:'tag', selected:true, custom:true});
+    customServiceInput.value=''; serviceInputRow.style.display='none'; refreshServices();
+  }
+  document.getElementById('addServiceConfirm').addEventListener('click', addCustomService);
+  customServiceInput.addEventListener('keydown', e => { if(e.key==='Enter') addCustomService(); });
+
+  const amenityInputRow = document.getElementById('amenityInputRow');
+  const customAmenityInput = document.getElementById('customAmenityInput');
+  document.getElementById('addAmenityBtn').addEventListener('click', ()=>{ amenityInputRow.style.display='flex'; customAmenityInput.focus(); });
+  document.getElementById('addAmenityCancel').addEventListener('click', ()=>{ amenityInputRow.style.display='none'; customAmenityInput.value=''; });
+  function addCustomAmenity(){
+    const name = customAmenityInput.value.trim(); if(!name) return;
+    state.amenities.push({id:'custom-'+Date.now(), name, icon:'tag', selected:true, custom:true});
+    customAmenityInput.value=''; amenityInputRow.style.display='none'; refreshAmenities();
+  }
+  document.getElementById('addAmenityConfirm').addEventListener('click', addCustomAmenity);
+  customAmenityInput.addEventListener('keydown', e => { if(e.key==='Enter') addCustomAmenity(); });
+
+  document.getElementById('backBtn').addEventListener('click', ()=> goto(3));
+  document.getElementById('continueBtn').addEventListener('click', ()=> goto(5));
+}
+
+/* ======================= STEP 5: MEMBERSHIP PLANS ======================= */
+function renderMembershipPlans(){
+  app.innerHTML = `
+    <div class="wrap">
+      ${progressHead(4, 'Membership Plans')}
+      <h1>What membership plans do you offer?</h1>
+      <p class="lede">Add your available membership options and pricing.</p>
+
+      <div class="plans-grid" id="plansGrid"></div>
+      <div class="empty-plans" id="emptyPlans" style="display:none;">No membership plans yet — add your first one below.</div>
+      <button class="add-plan-btn add-btn" id="addPlanBtn" style="background:var(--green); color:var(--white); border:none;">+ Add Membership Plan</button>
+
+      <div class="form-panel" id="formPanel">
+        <div class="form-panel-title" id="formPanelTitle">New Membership Plan</div>
+        <div class="grid2">
+          <div class="field"><label>Plan Name <span class="req">*</span></label><input type="text" id="planName" placeholder="e.g. Monthly"></div>
+          <div class="field"><label>Price <span class="req">*</span></label><input type="text" id="planPrice" placeholder="e.g. 499" inputmode="numeric"></div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>Duration <span class="req">*</span></label>
+            <select id="planDuration">
+              <option value="">Select duration</option>
+              <option value="Daily">Daily</option><option value="Monthly">Monthly</option>
+              <option value="Quarterly">Quarterly</option><option value="Half Yearly">Half Yearly</option>
+              <option value="Yearly">Yearly</option><option value="Custom">Custom</option>
+            </select>
+          </div>
+          <div class="field" id="customDurationField" style="display:none;">
+            <label>Custom Duration Label</label>
+            <input type="text" id="planDurationCustom" placeholder="e.g. 2 Months">
+          </div>
+        </div>
+        <div class="features-block">
+          <label style="display:block; font-size:12.5px; font-weight:600; color:var(--ink); margin-bottom:9px;">Features</label>
+          <div id="featureRows"></div>
+          <button class="add-feature-btn" id="addFeatureBtn">+ Add Feature</button>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" id="cancelPlanBtn">Cancel</button>
+          <button class="btn btn-primary" id="savePlanBtn">Save Plan</button>
+        </div>
+      </div>
+
+      <div class="footer-actions">
+        <button class="btn btn-ghost" id="backBtn">Back</button>
+        <button class="btn btn-primary" id="continueBtn">Save & Continue</button>
+      </div>
+    </div>`;
+
+  function renderPlans(){
+    const grid = document.getElementById('plansGrid');
+    document.getElementById('emptyPlans').style.display = state.plans.length ? 'none' : 'block';
+    grid.innerHTML = state.plans.map((p,i) => `
+      <div class="plan-card">
+        <div class="plan-card-top">
+          <div class="plan-name">${p.name}</div>
+          <div class="plan-reorder">
+            <button class="reorder-btn" data-up="${i}" ${i===0?'disabled':''}>${CHEV_UP}</button>
+            <button class="reorder-btn" data-down="${i}" ${i===state.plans.length-1?'disabled':''}>${CHEV_DOWN}</button>
+          </div>
+        </div>
+        <div class="plan-price">₹${p.price}</div>
+        <div class="plan-duration">${p.durationLabel}</div>
+        ${p.features.length ? `<ul class="plan-features">${p.features.map(f=>`<li>${f}</li>`).join('')}</ul>` : `<div class="plan-features-empty">No features listed</div>`}
+        <div class="plan-actions"><button class="edit-btn" data-edit="${i}">Edit</button><button class="delete-btn" data-delete="${i}">Delete</button></div>
+      </div>`).join('');
+
+    grid.querySelectorAll('[data-up]').forEach(btn => btn.addEventListener('click', ()=>{ const i=+btn.dataset.up; [state.plans[i-1],state.plans[i]]=[state.plans[i],state.plans[i-1]]; renderPlans(); }));
+    grid.querySelectorAll('[data-down]').forEach(btn => btn.addEventListener('click', ()=>{ const i=+btn.dataset.down; [state.plans[i+1],state.plans[i]]=[state.plans[i],state.plans[i+1]]; renderPlans(); }));
+    grid.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', ()=> openForm(+btn.dataset.edit)));
+    grid.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', ()=>{ state.plans.splice(+btn.dataset.delete,1); renderPlans(); }));
+  }
+
+  const formPanel = document.getElementById('formPanel');
+  const featureRows = document.getElementById('featureRows');
+  const planDuration = document.getElementById('planDuration');
+  const customDurationField = document.getElementById('customDurationField');
+  let currentFeatures = [];
+
+  function renderFeatureRows(){
+    featureRows.innerHTML = currentFeatures.map((f,i) => `<div class="feature-row"><input type="text" data-i="${i}" value="${f}" placeholder="e.g. Full gym access"><button data-remove="${i}">✕</button></div>`).join('');
+    featureRows.querySelectorAll('input').forEach(inp => inp.addEventListener('input', e => { currentFeatures[e.target.dataset.i] = e.target.value; }));
+    featureRows.querySelectorAll('[data-remove]').forEach(btn => btn.addEventListener('click', ()=>{ currentFeatures.splice(+btn.dataset.remove,1); renderFeatureRows(); }));
+  }
+  planDuration.addEventListener('change', ()=>{ customDurationField.style.display = planDuration.value==='Custom' ? 'block' : 'none'; });
+  document.getElementById('addFeatureBtn').addEventListener('click', ()=>{ currentFeatures.push(""); renderFeatureRows(); const inputs=featureRows.querySelectorAll('input'); if(inputs.length) inputs[inputs.length-1].focus(); });
+
+  function openForm(editIndex){
+    state.editingPlanIndex = editIndex ?? null;
+    const titleEl = document.getElementById('formPanelTitle');
+    if(editIndex !== undefined && editIndex !== null){
+      const p = state.plans[editIndex];
+      titleEl.textContent = "Edit Membership Plan";
+      document.getElementById('planName').value = p.name;
+      document.getElementById('planPrice').value = p.price;
+      const isPreset = Object.keys(DURATION_LABELS).includes(p.duration);
+      planDuration.value = isPreset ? p.duration : 'Custom';
+      customDurationField.style.display = isPreset ? 'none' : 'block';
+      document.getElementById('planDurationCustom').value = isPreset ? '' : p.durationLabel;
+      currentFeatures = [...p.features];
+    } else {
+      titleEl.textContent = "New Membership Plan";
+      document.getElementById('planName').value=''; document.getElementById('planPrice').value='';
+      planDuration.value=''; customDurationField.style.display='none';
+      document.getElementById('planDurationCustom').value=''; currentFeatures=[];
+    }
+    renderFeatureRows();
+    formPanel.classList.add('open');
+    formPanel.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+  function closeForm(){ formPanel.classList.remove('open'); state.editingPlanIndex = null; }
+
+  document.getElementById('addPlanBtn').addEventListener('click', ()=> openForm(null));
+  document.getElementById('cancelPlanBtn').addEventListener('click', closeForm);
+  document.getElementById('savePlanBtn').addEventListener('click', ()=>{
+    const name = document.getElementById('planName').value.trim();
+    const price = document.getElementById('planPrice').value.trim();
+    const duration = planDuration.value;
+    const customLabel = document.getElementById('planDurationCustom').value.trim();
+    let invalid = false;
+    [['planName',!!name],['planPrice',!!price],['planDuration',!!duration]].forEach(([id,ok])=>{
+      document.getElementById(id).classList.toggle('invalid', !ok); if(!ok) invalid = true;
+    });
+    if(duration==='Custom' && !customLabel){ document.getElementById('planDurationCustom').classList.add('invalid'); invalid = true; }
+    if(invalid) return;
+    const durationLabel = duration==='Custom' ? customLabel : DURATION_LABELS[duration];
+    const features = currentFeatures.map(f=>f.trim()).filter(Boolean);
+    const plan = { name, price, duration, durationLabel, features };
+    if(state.editingPlanIndex !== null) state.plans[state.editingPlanIndex] = plan; else state.plans.push(plan);
+    closeForm(); renderPlans();
+  });
+
+  renderPlans();
+  document.getElementById('backBtn').addEventListener('click', ()=> goto(4));
+  document.getElementById('continueBtn').addEventListener('click', ()=>{
+    if(!state.plans.length){ document.getElementById('emptyPlans').scrollIntoView({behavior:'smooth', block:'center'}); alert('Add at least one membership plan before continuing.'); return; }
+    goto(6);
+  });
+}
+
+/* ========================= STEP 6: PHOTO GALLERY ========================= */
+function renderPhotoGallery(){
+  app.innerHTML = `
+    <div class="wrap">
+      ${progressHead(5, 'Photo Gallery')}
+      <h1>Show us your gym</h1>
+      <p class="lede">Upload photos of your gym, equipment and facilities.</p>
+
+      <div class="dropzone" id="dropzone" style="padding:48px 24px;">
+        <div style="font-weight:700; font-size:15px; margin-bottom:6px; color:var(--black);">Drag & drop photos here</div>
+        <div style="font-size:12px; color:var(--gray-light); text-transform:uppercase; letter-spacing:0.08em; margin:8px 0; font-family:'JetBrains Mono',monospace;">or</div>
+        <button class="map-btn" id="browseBtn" type="button">Browse Files</button>
+        <div style="font-size:12px; color:var(--gray-light); margin-top:14px;">You can select multiple images at once</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+
+      <div class="empty-state" id="emptyState">No photos uploaded yet</div>
+      <div class="gallery-grid" id="galleryGrid"></div>
+
+      <div class="footer-actions">
+        <button class="btn btn-ghost" id="backBtn">Back</button>
+        <button class="btn btn-primary" id="continueBtn">Save & Continue</button>
+      </div>
+    </div>`;
+
+  function renderGallery(){
+    const grid = document.getElementById('galleryGrid');
+    document.getElementById('emptyState').style.display = state.images.length ? 'none' : 'block';
+    grid.innerHTML = state.images.map((img,i) => `
+      <div class="photo-card ${img.isCover?'is-cover':''}">
+        <div class="photo-media">
+          <img src="${img.src}">
+          ${img.isCover ? `<div class="cover-badge">${CHECK_SVG} Primary</div>` : ''}
+          <div class="reorder-overlay">
+            <button class="gal-reorder-btn" data-left="${i}" ${i===0?'disabled':''}>${CHEV_LEFT}</button>
+            <button class="gal-reorder-btn" data-right="${i}" ${i===state.images.length-1?'disabled':''}>${CHEV_RIGHT}</button>
+          </div>
+          <button class="delete-overlay" data-delete="${i}">${TRASH}</button>
+        </div>
+        <div class="photo-meta">
+          <select data-i="${i}">${CATEGORIES.map(c=>`<option value="${c}" ${img.category===c?'selected':''}>${c}</option>`).join('')}</select>
+          <button class="set-cover-btn ${img.isCover?'active':''}" data-cover="${i}" ${img.isCover?'disabled':''}>${img.isCover ? '✓ Primary Gym Image' : 'Set as Cover'}</button>
+        </div>
+      </div>`).join('');
+
+    grid.querySelectorAll('select').forEach(sel => sel.addEventListener('change', e => { state.images[e.target.dataset.i].category = e.target.value; }));
+    grid.querySelectorAll('[data-cover]').forEach(btn => btn.addEventListener('click', ()=>{ const i=+btn.dataset.cover; state.images.forEach((img,idx)=>img.isCover = idx===i); renderGallery(); }));
+    grid.querySelectorAll('[data-delete]').forEach(btn => btn.addEventListener('click', ()=>{ const i=+btn.dataset.delete; const wasCover=state.images[i].isCover; state.images.splice(i,1); if(wasCover && state.images.length) state.images[0].isCover=true; renderGallery(); }));
+    grid.querySelectorAll('[data-left]').forEach(btn => btn.addEventListener('click', ()=>{ const i=+btn.dataset.left; [state.images[i-1],state.images[i]]=[state.images[i],state.images[i-1]]; renderGallery(); }));
+    grid.querySelectorAll('[data-right]').forEach(btn => btn.addEventListener('click', ()=>{ const i=+btn.dataset.right; [state.images[i+1],state.images[i]]=[state.images[i],state.images[i+1]]; renderGallery(); }));
+  }
+
+  function addFiles(fileList){
+    [...fileList].forEach(file => {
+      if(!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        state.images.push({
+          id: 'img-' + Date.now() + '-' + Math.random().toString(36).slice(2),
+          src: ev.target.result,
+          base64: ev.target.result,
+          name: file.name,
+          type: file.type || 'image/jpeg',
+          category: 'Other',
+          isCover: state.images.length === 0,
+          file: file
+        });
+        renderGallery();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  dropzone.addEventListener('click', ()=> fileInput.click());
+  document.getElementById('browseBtn').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+  fileInput.addEventListener('change', e => addFiles(e.target.files));
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+  dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('drag'));
+  dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+
+  renderGallery();
+  document.getElementById('backBtn').addEventListener('click', ()=> goto(5));
+  document.getElementById('continueBtn').addEventListener('click', ()=>{
+    if(!state.images.length){ document.getElementById('emptyState').scrollIntoView({behavior:'smooth', block:'center'}); alert('Add at least one photo before continuing.'); return; }
+    goto(7);
+  });
+}
+
+/* ========================= STEP 7: REVIEW & SUBMIT ========================= */
+function validateAll(){
+  const b = state.basicInfo, l = state.location;
+  const missing = [];
+  if(!b.gymName.trim()) missing.push('Gym Name');
+  if(!b.logo) missing.push('Gym Logo');
+  if(!b.phone.trim()) missing.push('Phone Number');
+  if(!b.email.trim()) missing.push('Email Address');
+  if(!l.address.trim()) missing.push('Address');
+  if(!l.city.trim()) missing.push('City');
+  if(!l.state.trim()) missing.push('State');
+  if(!l.pincode.trim()) missing.push('Pincode');
+  if(!l.country.trim()) missing.push('Country');
+  if(!l.confirmed) missing.push('Confirmed map location');
+  if(!state.plans.length) missing.push('At least one membership plan');
+  if(!state.images.length) missing.push('At least one gallery photo');
+  if(state.images.length && !state.images.some(g=>g.isCover)) missing.push('A photo marked as Primary Gym Image');
+  return missing;
+}
+
+function completionPercent(){
+  const total = 13;
+  const missing = validateAll().length;
+  return Math.max(0, Math.round(((total - Math.min(missing,total)) / total) * 100));
+}
+
+function renderReview(){
+  const b = state.basicInfo, l = state.location;
+  const pct = completionPercent();
+  const selectedServices = state.services.filter(s=>s.selected);
+  const selectedAmenities = state.amenities.filter(a=>a.selected);
+
+  const hoursRows = Object.entries(state.hours).map(([day,h]) => `
+    <div class="hours-row ${h.open?'':'closed'}"><div class="day">${day}</div><div class="time">${h.open ? `${h.start} – ${h.end}` : 'Closed'}</div></div>`).join('');
+
+  const holidayRows = state.holidays.length
+    ? state.holidays.map(h => `<div class="holiday-row"><div class="name" style="font-weight:600;">${h.name || 'Untitled'} — ${h.date || 'no date'}</div><div class="tag">${h.status}</div></div>`).join('')
+    : `<div style="font-size:13px; color:var(--gray-light);">No holidays added.</div>`;
+
+  app.innerHTML = `
+    <div class="wrap" id="reviewWrap">
+      ${progressHead(7, 'Review & Submit')}
+      <div class="head-row">
+        <div><h1>Review your gym profile</h1><p class="lede">Please check your information before submitting.</p></div>
+        <div class="completion">
+          <div class="completion-ring" style="background:conic-gradient(var(--green) ${pct*3.6}deg, var(--line) 0deg);"><div class="completion-ring-inner">${pct}%</div></div>
+          <div class="completion-label">Profile complete</div>
+        </div>
+      </div>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Basic Information</span></div><button class="edit-btn" data-goto="2">Edit</button></div>
+        <div class="brand-preview">
+          ${b.logo ? `<img class="logo-thumb" src="${typeof b.logo === 'object' ? b.logo.base64 : b.logo}">` : `<div class="logo-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--paper);border:1px dashed var(--line-strong);font-size:10.5px;color:var(--gray-light);">No logo</div>`}
+          ${b.banner ? `<img class="banner-thumb" src="${typeof b.banner === 'object' ? b.banner.base64 : b.banner}" style="flex:1; min-width:220px;">` : `<div class="banner-thumb" style="flex:1;min-width:220px;display:flex;align-items:center;justify-content:center;background:var(--paper);border:1px dashed var(--line-strong);font-size:11.5px;color:var(--gray-light);">No banner</div>`}
+        </div>
+        <div class="kv-list">
+          <div class="kv-row"><div class="kv-k">Gym Name</div><div class="kv-v">${b.gymName || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Tagline</div><div class="kv-v">${b.tagline || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Description</div><div class="kv-v">${b.description || '—'}</div></div>
+        </div>
+        <div class="contact-grid" style="margin-top:14px;">
+          <div class="kv-row"><div class="kv-k">Phone</div><div class="kv-v">${b.phone || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Email</div><div class="kv-v">${b.email || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Website</div><div class="kv-v">${b.website || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Instagram</div><div class="kv-v">${b.instagram || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">WhatsApp</div><div class="kv-v">${b.whatsapp || '—'}</div></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Location</span></div><button class="edit-btn" data-goto="3">Edit</button></div>
+        <div class="kv-list">
+          <div class="kv-row"><div class="kv-k">Address</div><div class="kv-v">${l.address || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">City</div><div class="kv-v">${l.city || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">State</div><div class="kv-v">${l.state || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Pincode</div><div class="kv-v">${l.pincode || '—'}</div></div>
+          <div class="kv-row"><div class="kv-k">Country</div><div class="kv-v">${l.country || '—'}</div></div>
+        </div>
+        <div class="map-embed"><iframe loading="lazy" src="https://www.openstreetmap.org/export/embed.html?bbox=${l.lng-0.02}%2C${l.lat-0.02}%2C${l.lng+0.02}%2C${l.lat+0.02}&marker=${l.lat}%2C${l.lng}&layer=mapnik"></iframe></div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Operating Hours</span></div><button class="edit-btn" data-goto="3">Edit</button></div>
+        <div class="hours-grid">${hoursRows}</div>
+        <div class="holiday-list"><div class="holiday-list-title">Holiday Closures</div>${holidayRows}</div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Services</span></div><button class="edit-btn" data-goto="4">Edit</button></div>
+        <div class="pill-list">${selectedServices.length ? selectedServices.map(s=>`<div class="pill">${s.name}</div>`).join('') : `<div style="font-size:13px;color:var(--gray-light);">No services selected.</div>`}</div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Amenities</span></div><button class="edit-btn" data-goto="4">Edit</button></div>
+        <div class="pill-list">${selectedAmenities.length ? selectedAmenities.map(a=>`<div class="pill">${a.name}</div>`).join('') : `<div style="font-size:13px;color:var(--gray-light);">No amenities selected.</div>`}</div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Membership Plans</span></div><button class="edit-btn" data-goto="5">Edit</button></div>
+        <div class="plans-grid">${state.plans.map(p=>`
+          <div class="plan-mini">
+            <div class="plan-mini-name">${p.name}</div>
+            <div class="plan-mini-price">₹${p.price}</div>
+            <div class="plan-mini-duration">${p.durationLabel}</div>
+            <ul class="plan-mini-features">${p.features.map(f=>`<li>${f}</li>`).join('')}</ul>
+          </div>`).join('')}</div>
+      </section>
+
+      <section class="block">
+        <div class="block-head"><div class="block-head-left"><span class="block-eyebrow">Section</span><span class="block-title">Gallery</span></div><button class="edit-btn" data-goto="6">Edit</button></div>
+        <div class="review-gallery-grid">${state.images.map(img => `
+          <div class="review-gallery-thumb ${img.isCover?'cover':''}"><img src="${img.src}">${img.isCover ? '<span class="cover-tag">Cover</span>' : ''}</div>`).join('')}</div>
+      </section>
+
+      <div class="footer-actions">
+        <button class="btn btn-ghost" id="backBtn">Back</button>
+        <button class="btn btn-primary" id="submitBtn">Submit Gym Profile</button>
+      </div>
+    </div>`;
+
+  document.querySelectorAll('[data-goto]').forEach(btn => btn.addEventListener('click', ()=> goto(+btn.dataset.goto)));
+  document.getElementById('backBtn').addEventListener('click', ()=> goto(6));
+
+  document.getElementById('submitBtn').addEventListener('click', ()=>{
+    const missing = validateAll();
+    if(missing.length){ showValidationBanner(missing); return; }
+    document.getElementById('modalBackdrop').classList.add('open');
+  });
+}
+
+function showValidationBanner(missing){
+  let banner = document.getElementById('validationBanner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'validationBanner';
+    banner.className = 'validation-banner';
+    document.querySelector('.head-row').insertAdjacentElement('afterend', banner);
+  }
+  banner.innerHTML = `<strong>Before you submit:</strong> the following need attention — ${missing.join(', ')}.`;
+  banner.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* ===================== SUBMISSION WORKFLOW & GOOGLE APPS SCRIPT ===================== */
+// Deployed Google Apps Script Web App URL
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzs3bDWe5944YihGO_8ZPqlpuOkhBSk8zE3zdYapo0ABHXwqAH8Y14Scqa_ZC3-YTeg/exec";
+
+/**
+ * Normalizes any file/blob/base64 object into { base64, name, type } using FileReader
+ */
+function fileToBase64(file, defaultName, defaultType) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(null);
+      return;
+    }
+    // Already structured object
+    if (typeof file === 'object' && file.base64) {
+      resolve({
+        base64: file.base64,
+        name: file.name || defaultName || 'image.png',
+        type: file.type || defaultType || 'image/png'
+      });
+      return;
+    }
+    // Data URL string
+    if (typeof file === 'string' && file.startsWith('data:')) {
+      const mime = (file.match(/data:(.*?);/) || [])[1] || defaultType || 'image/png';
+      resolve({
+        base64: file,
+        name: defaultName || ('image.' + (mime.split('/')[1] || 'png')),
+        type: mime
+      });
+      return;
+    }
+    // Native File or Blob instance
+    if (file instanceof Blob || file instanceof File) {
+      const reader = new FileReader();
+      reader.onload = () => resolve({
+        base64: reader.result,
+        name: file.name || defaultName || 'upload.png',
+        type: file.type || defaultType || 'image/png'
+      });
+      reader.onerror = err => reject(err);
+      reader.readAsDataURL(file);
+      return;
+    }
+    resolve(null);
+  });
+}
+
+/**
+ * Bundles form fields and converts all image inputs concurrently using Promise.all()
+ */
+async function buildSubmissionPayload() {
+  const submissionId = 'FIT-GYM-' + Math.floor(100000 + Math.random() * 900000);
+  const submissionDate = new Date().toISOString();
+
+  // Convert Logo & Banner with FileReader
+  const logoData = await fileToBase64(state.basicInfo.logo, 'logo.png', 'image/png');
+  const bannerData = await fileToBase64(state.basicInfo.banner, 'banner.jpg', 'image/jpeg');
+
+  // Concurrently map all gallery images using Promise.all()
+  const galleryData = await Promise.all(
+    state.images.map(async (img, idx) => {
+      const fileSource = img.file || img;
+      const b64Obj = await fileToBase64(fileSource, img.name || `gallery_${idx + 1}.jpg`, img.type || 'image/jpeg');
+      return {
+        base64: b64Obj ? b64Obj.base64 : (img.src || ""),
+        name: img.name || (b64Obj ? b64Obj.name : `gallery_${idx + 1}.jpg`),
+        type: img.type || (b64Obj ? b64Obj.type : 'image/jpeg'),
+        category: img.category || 'Other',
+        isCover: !!img.isCover
+      };
+    })
+  );
+
+  return {
+    submissionId,
+    submissionDate,
+
+    // Image Uploads
+    logo: logoData,
+    banner: bannerData,
+    gallery: galleryData,
+
+    // Gym Information
+    gymName: state.basicInfo.gymName,
+    tagline: state.basicInfo.tagline,
+    description: state.basicInfo.description,
+
+    // Contact Information
+    phone: state.basicInfo.phone,
+    email: state.basicInfo.email,
+    website: state.basicInfo.website,
+    instagram: state.basicInfo.instagram,
+    whatsapp: state.basicInfo.whatsapp,
+    basicInfo: state.basicInfo,
+
+    // Location
+    location: state.location,
+    address: state.location.address,
+    city: state.location.city,
+    state: state.location.state,
+    pincode: state.location.pincode,
+    country: state.location.country,
+    coordinates: `${state.location.lat}, ${state.location.lng}`,
+
+    // Operating Hours & Holidays
+    operatingHours: Object.entries(state.hours).map(([day, h]) => ({ day, ...h })),
+    hours: state.hours,
+    holidays: state.holidays,
+
+    // Services & Amenities
+    services: state.services.filter(s => s.selected).map(s => s.name),
+    amenities: state.amenities.filter(a => a.selected).map(a => a.name),
+
+    // Membership Plans
+    membershipPlans: state.plans,
+    plans: state.plans
+  };
+}
+
+/**
+ * Posts JSON payload to Google Apps Script Web App
+ */
+async function submitToBackend(payload) {
+  if (!WEB_APP_URL || WEB_APP_URL === "YOUR_DEPLOYED_APPS_SCRIPT_URL") {
+    console.warn("WEB_APP_URL is using placeholder. Submitting locally (mock). Update WEB_APP_URL with your deployed Google Apps Script URL.");
+    await new Promise(r => setTimeout(r, 1200));
+    return {
+      status: "success",
+      message: "Submission successful (Mock Mode — please set WEB_APP_URL).",
+      submissionId: payload.submissionId
+    };
+  }
+
+  // Sending text/plain avoids CORS preflight OPTIONS request in browser
+  const response = await fetch(WEB_APP_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Server returned HTTP ${response.status}`);
+  }
+
+  const result = await response.json();
+  return result;
+}
+
+/**
+ * Submission workflow:
+ * - Intercepts form submission and prevents reload
+ * - Disables submit button & updates label to "Uploading assets..."
+ * - Maps gallery files concurrently with Promise.all()
+ * - Sends structured JSON payload to Google Apps Script
+ * - Provides clear alert feedback and proceeds to success screen
+ */
+async function runSubmissionWorkflow(e) {
+  if (e && e.preventDefault) e.preventDefault();
+
+  const modalSubmitBtn = document.getElementById('modalSubmit');
+  const submitBtn = document.getElementById('submitBtn');
+
+  if (modalSubmitBtn) {
+    modalSubmitBtn.disabled = true;
+    modalSubmitBtn.textContent = 'Uploading assets...';
+  }
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading assets...';
+  }
+
+  try {
+    // 1. Bundle and convert all assets concurrently with Promise.all()
+    const payload = await buildSubmissionPayload();
+
+    // 2. Post to Google Apps Script backend
+    const result = await submitToBackend(payload);
+
+    if (result && (result.status === 'success' || result.success)) {
+      state.lastSubmissionId = result.submissionId || payload.submissionId;
+
+      // Provide clear feedback alert to user on completion
+      alert('Gym profile submitted successfully! Your details and media have been uploaded to Google Drive and Google Sheets.');
+
+      document.getElementById('modalBackdrop').classList.remove('open');
+      goto('success');
+    } else {
+      throw new Error((result && result.message) || 'Server returned an error.');
+    }
+  } catch (err) {
+    console.error('Submission Error:', err);
+    alert('Submission failed: ' + (err.message || 'Please check your connection and try again.'));
+  } finally {
+    if (modalSubmitBtn) {
+      modalSubmitBtn.disabled = false;
+      modalSubmitBtn.textContent = 'Submit Profile';
+    }
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Gym Profile';
+    }
+  }
+}
+
+document.getElementById('modalCancel').addEventListener('click', ()=> document.getElementById('modalBackdrop').classList.remove('open'));
+document.getElementById('modalBackdrop').addEventListener('click', e => { if(e.target.id==='modalBackdrop') e.target.classList.remove('open'); });
+document.getElementById('modalSubmit').addEventListener('click', runSubmissionWorkflow);
+
+/* ============================== SUCCESS ============================== */
+function renderSuccess(){
+  document.getElementById('topbarNote').textContent = 'Submission Received';
+  app.innerHTML = `
+    <div class="stage">
+      <div class="success-card">
+        <div class="check-badge">${CHECK_SVG}</div>
+        <h1>Your gym profile has been submitted!</h1>
+        <p class="lede">Thank you for sharing your gym information with FITAVAL. Our team will review your profile and get back to you.</p>
+        <div class="status-list">
+          <div class="status-row"><div class="status-check">${CHECK_SVG}</div>Profile submitted</div>
+          <div class="status-row"><div class="status-check">${CHECK_SVG}</div>Information received</div>
+          <div class="status-row"><div class="status-check">${CHECK_SVG}</div>Photos uploaded</div>
+          <div class="status-row"><div class="status-check">${CHECK_SVG}</div>Review pending</div>
+        </div>
+        <div class="id-block"><div class="id-label">Submission ID</div><div class="id-value">${state.lastSubmissionId || 'FIT-GYM-000000'}</div></div>
+        <div class="next-step"><b>Expected next step</b>Our team will review the submitted information.</div>
+        <div class="success-actions">
+          <button class="btn btn-primary" id="doneBtn">Done</button>
+          <button class="btn btn-ghost" id="anotherBtn">Submit Another Gym</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('doneBtn').addEventListener('click', ()=>{
+    alert('This would close the onboarding flow and return to the gym owner\'s dashboard or FITAVAL home.');
+  });
+  document.getElementById('anotherBtn').addEventListener('click', ()=>{
+    resetState();
+    goto(1);
+  });
+}
+
+function resetState(){
+  state.basicInfo = { logo:null, banner:null, gymName:"", tagline:"", description:"", phone:"", email:"", website:"", instagram:"", whatsapp:"" };
+  state.location = { address:"", city:"", state:"", pincode:"", country:"", lat:10.5276, lng:76.2144, confirmed:false };
+  state.hours = {
+    Monday:{open:true,start:"06:00",end:"22:00"}, Tuesday:{open:true,start:"06:00",end:"22:00"},
+    Wednesday:{open:true,start:"06:00",end:"22:00"}, Thursday:{open:true,start:"06:00",end:"22:00"},
+    Friday:{open:true,start:"06:00",end:"22:00"}, Saturday:{open:true,start:"07:00",end:"20:00"},
+    Sunday:{open:false,start:"07:00",end:"13:00"},
+  };
+  state.holidays = [];
+  state.services.forEach(s => s.selected = false);
+  state.services = state.services.filter(s => !s.custom);
+  state.amenities.forEach(a => a.selected = false);
+  state.amenities = state.amenities.filter(a => !a.custom);
+  state.plans = [];
+  state.images = [];
+  state.lastSubmissionId = null;
+}
+
+render();
+</script>
+</body>
+</html>
